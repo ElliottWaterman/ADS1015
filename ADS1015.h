@@ -64,15 +64,6 @@ typedef enum {
 
 
 /**
- * Conversion Register (Read)
- */
-typedef struct {
-    uint8_t reserved : 4;
-    uint16_t value : 12;
-} ads1015_measurement_t;
-int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, ads1015_measurement_t *result);
-
-/**
  * Configuration Register (Read/Write)
  */
 typedef struct {
@@ -182,6 +173,16 @@ typedef enum {
 } ads1015_comp_que_t;
 int32_t ads1015_comp_que_get(ads1015_ctx_t *ctx, ads1015_comp_que_t *que);
 int32_t ads1015_comp_que_set(ads1015_ctx_t *ctx, ads1015_comp_que_t que);
+
+
+/**
+ * Conversion Register (Read)
+ */
+typedef struct {
+    uint8_t reserved : 4;
+    uint16_t value : 12;
+} ads1015_measurement_t;
+int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, ads1015_measurement_t *result);
 
 
 /**

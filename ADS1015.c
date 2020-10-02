@@ -1,5 +1,9 @@
 #include "ADS1015.h"
 
+#include <string.h>
+
+static ads1015_config_reg_t last_config;
+
 /**
  * @brief  Read generic device register
  * 
@@ -32,27 +36,16 @@ int32_t ads1015_write_reg(ads1015_ctx_t* ctx, uint8_t reg, uint8_t* data, uint16
     return ret;
 }
 
-
-/* Conversion Register (Measurement) */
-int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, ads1015_measurement_t *result)
+inline static bool config_equal(const ads1015_config_reg_t *a, const ads1015_config_reg_t *b)
 {
-    int32_t ret;
-
-    /* Start a single measurement conversion */
-    config.os = ADS1015_OS_SINGLE;
-
-    ret = ads1015_config_set(ctx, config);
-    if (ret == 0) {
-        /* Block until measurement conversion has completed */
-        ads1015_os_t ready = ADS1015_OS_NOT_AVAILABLE;
-        do {
-            ads1015_available_get(ctx, &ready);
-        } while (ready != ADS1015_OS_AVAILABLE);
-
-        /* Read new measurement */
-        ret = ads1015_read_reg(ctx, ADS1015_POINTER_CONVERSION, (uint8_t*) &result, 2);
-    }
-    return ret;
+    return a->comp_que == b->comp_que
+        && a->comp_lat == b->comp_lat
+        && a->comp_pol == b->comp_pol
+        && a->dr == b->dr
+        && a->mode == b->mode
+        && a->pga == b->pga
+        && a->mux == b->mux
+        && a->os == b->os;
 }
 
 
@@ -65,8 +58,13 @@ int32_t ads1015_config_get(ads1015_ctx_t *ctx, ads1015_config_reg_t *config)
 }
 int32_t ads1015_config_set(ads1015_ctx_t *ctx, ads1015_config_reg_t config)
 {
-    int32_t ret;
-    ret = ads1015_write_reg(ctx, ADS1015_POINTER_CONFIG, (uint8_t*) &config, 2);
+    int32_t ret = 0;
+    if (!config_equal(&config, &last_config)) {
+        ret = ads1015_write_reg(ctx, ADS1015_POINTER_CONFIG, (uint8_t*) &config, 2);
+
+        /* Save latest configuration */
+        memcpy(&last_config, &config, sizeof(ads1015_config_reg_t));
+    }
     return ret;
 }
 
@@ -291,6 +289,29 @@ int32_t ads1015_comp_que_set(ads1015_ctx_t *ctx, ads1015_comp_que_t que)
     if (ret == 0 && config.comp_que != (uint8_t) que) {
         config.comp_que = (uint8_t) que;
         ret = ads1015_config_set(ctx, config);
+    }
+    return ret;
+}
+
+
+/* Conversion Register (Measurement) */
+int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, ads1015_measurement_t *result)
+{
+    int32_t ret;
+
+    /* Start a single measurement conversion */
+    config.os = ADS1015_OS_SINGLE;
+
+    ret = ads1015_config_set(ctx, config);
+    if (ret == 0) {
+        /* Block until measurement conversion has completed */
+        ads1015_os_t ready = ADS1015_OS_NOT_AVAILABLE;
+        do {
+            ads1015_available_get(ctx, &ready);
+        } while (ready != ADS1015_OS_AVAILABLE);
+
+        /* Read new measurement */
+        ret = ads1015_read_reg(ctx, ADS1015_POINTER_CONVERSION, (uint8_t*) &result, 2);
     }
     return ret;
 }
