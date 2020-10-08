@@ -1,4 +1,8 @@
 /**
+ * ADS1015.h
+ * Created: 08 October 2020
+ * Author: Elliott
+ *
  * ADS1015 contains four registers that are accessible through the I2C interface 
  * using the Address Pointer register:
  *  - Conversion register
@@ -37,10 +41,6 @@ typedef struct {
   void *handle;
 } ads1015_ctx_t;
 
-/* Internal I2C read/write functions which call platform specific I2C functions */
-int32_t ads1015_read_reg(ads1015_ctx_t *ctx, uint8_t reg, uint8_t* data, uint16_t len);
-int32_t ads1015_write_reg(ads1015_ctx_t *ctx, uint8_t reg, uint8_t* data, uint16_t len);
-
 
 /**
  * Address Pointer Registers (Write)
@@ -67,18 +67,57 @@ typedef enum {
  * Configuration Register (Read/Write)
  */
 typedef struct {
-    uint8_t comp_que : 2;
+    uint8_t mode : 1;       /* MSByte Start */
+    uint8_t pga : 3;
+    uint8_t mux : 3;
+    uint8_t os : 1;         /* MSByte End */
+    uint8_t comp_que : 2;   /* LSByte Start */
     uint8_t comp_lat : 1;
     uint8_t comp_pol : 1;
     uint8_t comp_mode : 1;
-    uint8_t dr : 3;
-    uint8_t mode : 1;
-    uint8_t pga : 3;
-    uint8_t mux : 3;
-    uint8_t os : 1;
+    uint8_t dr : 3;         /* LSByte End */
 } ads1015_config_reg_t;
 int32_t ads1015_config_get(ads1015_ctx_t *ctx, ads1015_config_reg_t *config);
 int32_t ads1015_config_set(ads1015_ctx_t *ctx, ads1015_config_reg_t config);
+
+#define ADS1015_DEFAULT_CONFIG() \
+    {                            \
+        .mode = 1,               \
+        .pga = 2,                \
+        .mux = 0,                \
+        .os = 1,                 \
+        .comp_que = 3,           \
+        .comp_lat = 0,           \
+        .comp_pol = 0,           \
+        .comp_mode = 0,          \
+        .dr = 4,                 \
+    }
+static inline void ads1015_config_default_get(ads1015_config_reg_t *config)
+{
+    /* *config = 0x8583; */
+    config->mode = 1;
+    config->pga = 2;
+    config->mux = 0;
+    config->os = 1;
+    config->comp_que = 3;
+    config->comp_lat = 0;
+    config->comp_pol = 0;
+    config->comp_mode = 0;
+    config->dr = 4;
+}
+static inline uint16_t ads1015_config_to_uint16_t(ads1015_config_reg_t *config)
+{
+    return config->comp_que
+        | config->comp_lat << 2
+        | config->comp_pol << 3
+        | config->comp_mode << 4
+        | config->dr << 5
+        | config->mode << 8
+        | config->pga << 9
+        | config->mux << 12
+        | config->os << 15;
+}
+
 
 /* Operational Status (OS) */
 typedef enum {

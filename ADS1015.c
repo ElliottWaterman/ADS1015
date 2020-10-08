@@ -1,8 +1,18 @@
+/**
+ * ADS1015.c
+ * Created: 08 October 2020
+ * Author: Elliott
+ */
+
 #include "ADS1015.h"
 
 #include <string.h>
 
+/*** Local Data ***/
+
 static ads1015_config_reg_t last_config;
+
+/*** Local Functions ***/
 
 /**
  * @brief  Read generic device register
@@ -48,6 +58,7 @@ inline static bool config_equal(const ads1015_config_reg_t *a, const ads1015_con
         && a->os == b->os;
 }
 
+/*** Global Functions ***/
 
 /* Configuration Register */
 int32_t ads1015_config_get(ads1015_ctx_t *ctx, ads1015_config_reg_t *config)
