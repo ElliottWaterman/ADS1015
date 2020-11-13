@@ -217,11 +217,7 @@ int32_t ads1015_comp_que_set(ads1015_ctx_t *ctx, ads1015_comp_que_t que);
 /**
  * Conversion Register (Read)
  */
-typedef struct {
-    uint8_t reserved : 4;
-    uint16_t value : 12;
-} ads1015_measurement_t;
-int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, ads1015_measurement_t *result);
+int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, uint16_t *result);
 
 
 /**
@@ -230,14 +226,10 @@ int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config,
  * Low Default: 0x8000
  * High Default: 0x7fff
  */
-typedef struct {
-    uint8_t reserved : 4;
-    uint16_t value : 12;
-} ads1015_threshold_t;
-int32_t ads1015_low_thresh_get(ads1015_ctx_t *ctx, ads1015_threshold_t *value);
-int32_t ads1015_low_thresh_set(ads1015_ctx_t *ctx, ads1015_threshold_t value);
-int32_t ads1015_high_thresh_get(ads1015_ctx_t *ctx, ads1015_threshold_t *value);
-int32_t ads1015_high_thresh_set(ads1015_ctx_t *ctx, ads1015_threshold_t value);
+int32_t ads1015_low_thresh_get(ads1015_ctx_t *ctx, uint16_t *value);
+int32_t ads1015_low_thresh_set(ads1015_ctx_t *ctx, uint16_t value);
+int32_t ads1015_high_thresh_get(ads1015_ctx_t *ctx, uint16_t *value);
+int32_t ads1015_high_thresh_set(ads1015_ctx_t *ctx, uint16_t value);
 
 
 #ifdef __cplusplus

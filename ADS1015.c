@@ -10,7 +10,7 @@
 
 /*** Local Data ***/
 
-static ads1015_config_reg_t last_config;
+// static ads1015_config_reg_t last_config;
 
 /*** Local Functions ***/
 
@@ -70,13 +70,20 @@ int32_t ads1015_config_get(ads1015_ctx_t *ctx, ads1015_config_reg_t *config)
 int32_t ads1015_config_set(ads1015_ctx_t *ctx, ads1015_config_reg_t config)
 {
     int32_t ret = 0;
-    if (!config_equal(&config, &last_config)) {
-        ret = ads1015_write_reg(ctx, ADS1015_POINTER_CONFIG, (uint8_t*) &config, 2);
-
-        /* Save latest configuration */
-        memcpy(&last_config, &config, sizeof(ads1015_config_reg_t));
-    }
+    ret = ads1015_write_reg(ctx, ADS1015_POINTER_CONFIG, (uint8_t*) &config, 2);
     return ret;
+
+    // bool different_config = !config_equal(&config, &last_config);
+
+    // if (config.mode == ADS1015_MODE_SINGLE || different_config) {
+    //     ret = ads1015_write_reg(ctx, ADS1015_POINTER_CONFIG, (uint8_t*) &config, 2);
+    // }
+
+    // if (different_config) {
+    //     /* Save latest configuration */
+    //     memcpy(&last_config, &config, sizeof(ads1015_config_reg_t));
+    // }
+    // return ret;
 }
 
 /* Operational Status (OS) */
@@ -306,9 +313,10 @@ int32_t ads1015_comp_que_set(ads1015_ctx_t *ctx, ads1015_comp_que_t que)
 
 
 /* Conversion Register (Measurement) */
-int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, ads1015_measurement_t *result)
+int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config, uint16_t *result)
 {
     int32_t ret;
+    uint8_t buffer[2];
 
     /* Start a single measurement conversion */
     config.os = ADS1015_OS_SINGLE;
@@ -318,30 +326,59 @@ int32_t ads1015_measurement_get(ads1015_ctx_t *ctx, ads1015_config_reg_t config,
         /* Block until measurement conversion has completed */
         ads1015_os_t ready = ADS1015_OS_NOT_AVAILABLE;
         do {
+            // TODO: Check return is 0, otherwise exit loop as I2C communication has failed
             ads1015_available_get(ctx, &ready);
         } while (ready != ADS1015_OS_AVAILABLE);
 
         /* Read new measurement */
-        ret = ads1015_read_reg(ctx, ADS1015_POINTER_CONVERSION, (uint8_t*) &result, 2);
+        ret = ads1015_read_reg(ctx, ADS1015_POINTER_CONVERSION, buffer, 2);
+        if (ret == 0) {
+            // 12-bit measurement keeping these bits -> 0x[FF][F0] into 0x0[FF][F]
+            *result = ((uint16_t) buffer[0] << 4) + ((uint16_t) buffer[1] >> 4);
+        }
     }
     return ret;
 }
 
 
 /* Threshold Registers */
-int32_t ads1015_low_thresh_get(ads1015_ctx_t *ctx, ads1015_threshold_t *value)
+int32_t ads1015_low_thresh_get(ads1015_ctx_t *ctx, uint16_t *value)
 {
-    return ads1015_read_reg(ctx, ADS1015_POINTER_LOW_THRESH, (uint8_t*) value, 2);
+    int32_t ret;
+    uint8_t buffer[2];
+
+    ret = ads1015_read_reg(ctx, ADS1015_POINTER_LOW_THRESH, buffer, 2);
+    if (ret == 0) {
+        // 12-bit measurement keeping these bits -> 0x[FF][F0] into 0x0[FF][F]
+        *value = ((uint16_t) buffer[0] << 4) + ((uint16_t) buffer[1] >> 4);
+    }
+    return ret;
 }
-int32_t ads1015_low_thresh_set(ads1015_ctx_t *ctx, ads1015_threshold_t value)
+int32_t ads1015_low_thresh_set(ads1015_ctx_t *ctx, uint16_t value)
 {
-    return ads1015_write_reg(ctx, ADS1015_POINTER_LOW_THRESH, (uint8_t*) &value, 2);
+    uint8_t buffer[2];
+    // 12-bit threshold keeping these bits -> 0x0[FF][F] into 0x[FF][F0]
+    buffer[0] = (uint8_t)((value >> 4) & 0x00FF);
+    buffer[1] = (uint8_t)((value << 4) & 0x00FF);
+    return ads1015_write_reg(ctx, ADS1015_POINTER_LOW_THRESH, buffer, 2);
 }
-int32_t ads1015_high_thresh_get(ads1015_ctx_t *ctx, ads1015_threshold_t *value)
+int32_t ads1015_high_thresh_get(ads1015_ctx_t *ctx, uint16_t *value)
 {
-    return ads1015_read_reg(ctx, ADS1015_POINTER_HIGH_THRESH, (uint8_t*) value, 2);
+    int32_t ret;
+    uint8_t buffer[2];
+
+    ret = ads1015_read_reg(ctx, ADS1015_POINTER_HIGH_THRESH, buffer, 2);
+    if (ret == 0) {
+        // 12-bit measurement keeping these bits -> 0x[FF][F0] into 0x0[FF][F]
+        *value = ((uint16_t) buffer[0] << 4) + ((uint16_t) buffer[1] >> 4);
+    }
+    return ret;
 }
-int32_t ads1015_high_thresh_set(ads1015_ctx_t *ctx, ads1015_threshold_t value)
+int32_t ads1015_high_thresh_set(ads1015_ctx_t *ctx, uint16_t value)
 {
-    return ads1015_write_reg(ctx, ADS1015_POINTER_HIGH_THRESH, (uint8_t*) &value, 2);
+    uint8_t buffer[2];
+    // 12-bit threshold keeping these bits -> 0x0[FF][F] into 0x[FF][F0]
+    buffer[0] = (uint8_t)((value >> 4) & 0x00FF);
+    buffer[1] = (uint8_t)((value << 4) & 0x00FF);
+    return ads1015_write_reg(ctx, ADS1015_POINTER_HIGH_THRESH, buffer, 2);
 }
