@@ -12,7 +12,7 @@ To take a measurement, call the function `ads1015_measurement_get` with paramete
 - `ads1015_config_reg_t`
   - Config values specific to the connected device & channel (i.e. channel, gain, mode, data rate, etc).
   - The _operational status (OS)_ is set to 1 in this function which the ADS1015 needs to start a measurement.
-- `ads1015_measurement_t`
+- `uint16_t measurement`
   - To recieve a 12-bit measurement once the conversion has completed.
 
 ## How to implement
@@ -20,9 +20,9 @@ To take a measurement, call the function `ads1015_measurement_get` with paramete
 
 - Create an instance of `ads1015_ctx_t` and set the _mandatory_ `read_reg` and `write_reg` fields to the platform specific I2C read and write _functions_.
 
-- Create an instance of `ads1015_config_reg_t` and set the values to work with a device on a channel.
+- Create an instance of `ads1015_config_reg_t` and set the values to work with a specific device on a channel.
 
-- Call the function `ads1015_measurement_get` with above parameters as well as an instance of `ads1015_measurement_t`.
+- Call the function `ads1015_measurement_get` as described under heading [Taking a measurement](#taking-a-measurement).
 
 ### Arduino
 
@@ -67,18 +67,23 @@ dev_ctx.read_reg = platform_read;
 ...
 
 
-ads1015_config_reg_t config;
+ads1015_config_reg_t config = ADS1015_DEFAULT_CONFIG();
+// customise default config above with device specific settings below
 config.mux = ADS1015_MUX_0; // Input channel: 0
 config.pga = ADS1015_PGA_3; // Gain: +/- 1.024V
 // etc...
 
-ads1015_measurement_t result;
 
-if (ads1015_measurement_get(dev_ctx, config, &result) == 0) {
-    uint16_t measurement = result.value;
+...
+
+
+uint16_t measurement;
+int32_t error_response = ads1015_measurement_get(&dev_ctx, config, &measurement);
+if (error_response == 0) {
+    // Success, use measurement here
 }
 else {
-    // Failed to get measurement, I2C error usually
+    // Failure, handle error here
 }
 
 ```
